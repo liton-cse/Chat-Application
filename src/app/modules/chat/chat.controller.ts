@@ -8,12 +8,13 @@ import catchAsync from '../../../shared/catchAsync';
 const sendMessage = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { senderId, receiverId, message } = req.body;
+      const { receiverId, message } = req.body;
 
-      if (!senderId || !receiverId || !message) {
+      if (!receiverId || !message) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
-
+      const user = req.user;
+      const senderId = req.user.id;
       const savedMessage = await chatService.saveMessage(
         Types.ObjectId.createFromHexString(senderId),
         Types.ObjectId.createFromHexString(receiverId),
@@ -28,7 +29,7 @@ const sendMessage = catchAsync(
       sendResponse(res, {
         success: true,
         statusCode: StatusCodes.OK,
-        message: savedMessage.message,
+        message: '🔔Messages are encrypted successfully and save in database !',
         data: savedMessage,
       });
     } catch (error) {
@@ -36,23 +37,25 @@ const sendMessage = catchAsync(
     }
   }
 );
-
-const getConversation = catchAsync(async (req: Request, res: Response) => {
-  try {
-    const { userA, userB } = req.params;
-
-    const messages = await chatService.getConversation(
-      new Types.ObjectId(userA),
-      new Types.ObjectId(userB)
-    );
-
-    return res.status(200).json(messages);
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch conversation' });
+// @apiend: api/v1/chat/conversations
+// @method: get
+const getConversationHistory = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const allConversation = await chatService.getAllConversations();
+      sendResponse(res, {
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'All conversation fetched successfully!',
+        data: allConversation,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 export const ChatController = {
   sendMessage,
-  getConversation,
+  getConversationHistory,
 };
